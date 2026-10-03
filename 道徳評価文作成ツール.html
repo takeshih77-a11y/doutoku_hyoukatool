@@ -1,0 +1,1169 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>道徳評価文作成ツール</title>
+<style>
+  :root{
+    --bg: #f7f5f0;
+    --surface: #ffffff;
+    --surface-2: #f6f3ec;
+    --border: #e6e1d4;
+    --text: #2a2822;
+    --text-dim: #7d7869;
+    --accent: #2f5d62;
+    --accent-soft: #e3edec;
+    --accent-strong: #1c3d40;
+    --accent-contrast: #ffffff;
+    --ok: #3f7d5c;
+    --ok-bg: #eaf3ee;
+    --warn: #a6602a;
+    --warn-bg: #fbf0e4;
+    --danger: #b3462c;
+    --shadow: 0 1px 2px rgba(30,32,24,.04), 0 10px 28px rgba(30,32,24,.06);
+    --radius: 16px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg: #17181a;
+      --surface: #211f1c;
+      --surface-2: #262421;
+      --border: #38352e;
+      --text: #ece9e2;
+      --text-dim: #a39d8d;
+      --accent: #7fbdb9;
+      --accent-soft: #203635;
+      --accent-strong: #b6ded9;
+      --accent-contrast: #0e1f20;
+      --ok: #7fc79f;
+      --ok-bg: #223327;
+      --warn: #e0a869;
+      --warn-bg: #362a1c;
+      --danger: #e1876a;
+      --shadow: 0 1px 2px rgba(0,0,0,.25), 0 10px 28px rgba(0,0,0,.35);
+    }
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.7;
+    padding: 48px 20px 90px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap{ max-width: 860px; margin: 0 auto; }
+
+  header.page{ margin-bottom: 26px; }
+  .eyebrow{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    color: var(--accent-strong);
+    margin-bottom: 10px;
+  }
+  .eyebrow svg{ width: 13px; height: 13px; flex: 0 0 auto; }
+  header.page h1{
+    font-size: 25px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    margin: 0 0 8px;
+    color: var(--text);
+  }
+  header.page p{
+    margin: 0;
+    color: var(--text-dim);
+    font-size: 13.5px;
+    max-width: 56ch;
+  }
+
+  .privacy-note{
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    background: var(--accent-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 13px 16px;
+    margin: 20px 0 28px;
+    font-size: 12.5px;
+    color: var(--text-dim);
+  }
+  .privacy-note svg{
+    flex: 0 0 auto;
+    width: 15px; height: 15px;
+    margin-top: 2px;
+    color: var(--accent-strong);
+  }
+
+  .tabs{
+    display: inline-flex;
+    gap: 2px;
+    padding: 4px;
+    margin-bottom: 24px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+  }
+  .tab-btn{
+    appearance: none;
+    border: none;
+    background: transparent;
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-dim);
+    padding: 9px 18px;
+    cursor: pointer;
+    border-radius: 999px;
+    transition: background .15s ease, color .15s ease;
+  }
+  .tab-btn.active{
+    color: var(--accent-contrast);
+    background: var(--accent);
+  }
+
+  .panel{ display: none; }
+  .panel.active{ display: block; }
+
+  .card{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 22px 24px;
+    margin-bottom: 16px;
+  }
+
+  .card-top{
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .card-index{
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    font-weight: 600;
+  }
+  .card-index .num{
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .icon-btn{
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-dim);
+    border-radius: 8px;
+    font-size: 12px;
+    padding: 5px 11px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .icon-btn:hover{ background: var(--border); color: var(--text); }
+  .icon-btn.danger:hover{ color: var(--danger); border-color: var(--danger); background: transparent; }
+
+  .field-grid{
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 14px;
+    margin-bottom: 6px;
+  }
+  .field{
+    display:flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .field.span2{ grid-column: 1 / -1; }
+  .field label{
+    font-size: 11.5px;
+    color: var(--text-dim);
+    font-weight: 600;
+    letter-spacing: .02em;
+  }
+  select, input[type="text"]{
+    font: inherit;
+    font-size: 13.5px;
+    color: var(--text);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 9px 11px;
+    width: 100%;
+    appearance: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  select:focus, input[type="text"]:focus{
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .custom-input{ margin-top: 6px; }
+  select{
+    background-image: linear-gradient(45deg, transparent 50%, var(--text-dim) 50%), linear-gradient(135deg, var(--text-dim) 50%, transparent 50%);
+    background-position: calc(100% - 16px) center, calc(100% - 11px) center;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 28px;
+  }
+
+  .output{
+    background: var(--surface-2);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    padding: 14px 16px;
+    margin-top: 14px;
+  }
+  .output + .output{ margin-top: 10px; }
+  .output-label{
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 7px;
+  }
+  .output-label span.name{
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-strong);
+    letter-spacing: .03em;
+  }
+  .output-text{
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+    font-size: 15.5px;
+    line-height: 1.9;
+    min-height: 1.9em;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .output-text.empty{
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 13px;
+  }
+  .output-meta{
+    display:flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 9px;
+    font-size: 11.5px;
+  }
+  .count{ color: var(--text-dim); }
+  .badge{
+    display:inline-block;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 11px;
+  }
+  .badge.ok{ background: var(--ok-bg); color: var(--ok); }
+  .badge.warn{ background: var(--warn-bg); color: var(--warn); }
+  .copy-btn{
+    margin-left: auto;
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    border-radius: 8px;
+    font-size: 11px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: border-color .15s ease, color .15s ease;
+  }
+  .copy-btn:hover{ border-color: var(--accent); color: var(--accent-strong); }
+  .copy-btn.copied{ color: var(--ok); border-color: var(--ok); }
+
+  .add-row{
+    width: 100%;
+    appearance: none;
+    border: 1.5px dashed var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    border-radius: var(--radius);
+    padding: 15px;
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 4px;
+    transition: border-color .15s ease, color .15s ease, transform .1s ease;
+  }
+  .add-row:hover{ border-color: var(--accent); color: var(--accent-strong); }
+  .add-row:active{ transform: scale(.997); }
+
+  footer.page{
+    margin-top: 44px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  footer.page .saved{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    color: var(--text-dim);
+  }
+  footer.page .saved::before{
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--ok);
+  }
+  .clear-btn{
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    padding: 6px 4px;
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    transition: color .15s ease, text-decoration-color .15s ease;
+  }
+  .clear-btn:hover{ color: var(--danger); text-decoration-color: var(--danger); }
+
+  @media (max-width: 520px){
+    .field-grid{ grid-template-columns: 1fr; }
+    body{ padding: 32px 14px 70px; }
+    .card{ padding: 18px 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <div class="eyebrow">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6M12 2c-3 0-5 2-5 5s2 4 5 4 5-2 5-4-2-5-5-5Z"/><path d="M12 12v10M8 22h8"/></svg>
+      道徳科 評価文サポート
+    </div>
+    <h1>道徳評価文作成ツール</h1>
+    <p>①学習状況・②道徳的価値・③道徳性に係る成長の様子を組み合わせて、通知票・指導要録の文章を自動生成します。</p>
+  </header>
+
+  <div class="privacy-note">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+    <div>
+      このページはインターネットに送信されず、すべてこの端末・このブラウザの中だけで動作します。入力内容は自動的にこのブラウザ内(localStorage)にのみ保存されます。氏名・エピソードなど個人情報を扱うため、他の端末やクラウド、メールへの転送・共有は行わないでください。
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="term">1・2学期用</button>
+    <button class="tab-btn" data-tab="year">学年末所見・指導要録用</button>
+  </div>
+
+  <section id="panel-term" class="panel active">
+    <div id="term-list"></div>
+    <button class="add-row" id="term-add">＋ 児童を追加</button>
+  </section>
+
+  <section id="panel-year" class="panel">
+    <div id="year-list"></div>
+    <button class="add-row" id="year-add">＋ 児童を追加</button>
+  </section>
+
+  <footer class="page">
+    <span class="saved" id="saved-indicator">保存済み</span>
+    <button class="clear-btn" id="clear-all">すべてのデータを消去</button>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var ITEM1 = [
+    "教材の主人公に自分を置き換えながら、",
+    "自分を振り返り、",
+    "自分のこととしてとらえながら、",
+    "授業では意欲的に発表し、",
+    "価値判断の根拠や心情を様々な観点から考え、",
+    "友だちと考えを交流する中で、",
+    "友だちの意見によく耳を傾け、",
+    "学習を重ねていく中で、",
+    "教材に心を動かされ、",
+    "考えが正しいかどうか問い続け、",
+    "自分の人生に影響を与える教材に出あい、",
+    "教材を自分自身に置き換えて、",
+    "自らの行動や考えを見直し、",
+    "自分のこととしてとらえ、",
+    "授業では意欲的に話し合いをし、",
+    "広い視野や友人の視点から、",
+    "皆の意見によく耳を傾け、"
+  ];
+
+  var ITEM2 = [
+    "善悪の判断について",
+    "自分のことは自分ですることについて",
+    "自由と責任について",
+    "正直に生きることについて",
+    "誠実に生きることについて",
+    "時と場合に応じて行動に気を付けることについて",
+    "生活習慣の大切さについて理解し、節度・節制を心掛けることについて",
+    "自分のよさについて",
+    "勇気を持って物事をやりぬくことについて",
+    "強い意志を持って物事をやりぬくことについて",
+    "真理を大切にし物事を探求しようとする心をもつことについて",
+    "親切について",
+    "思いやりについて",
+    "家族や多くの人々に感謝することについて",
+    "礼儀正しく真心をもって接することについて",
+    "友だちとのかかわりの大切さについて",
+    "互いを理解し、自分と異なる意見を大切にすることについて",
+    "約束や社会のきまりを理解し、それらを守ることについて",
+    "誰に対しても分け隔てなく、公正、公平な態度で接することについて",
+    "働くことの大切さについて",
+    "進んでみんなのために働くことについて",
+    "家族みんなで協力し合って楽しい家庭をつくることについて",
+    "伝統や文化を大切にすることについて",
+    "世界の人々や文化を理解することについて",
+    "いのちの大切さについて",
+    "自然の大切さについて",
+    "自然の豊かさについて",
+    "自然の神秘について",
+    "物事のすばらしさや不思議さを感じ取り、",
+    "よりよい生き方について"
+  ];
+
+  var ITEM3 = [
+    { keitai: "互いの考えを深める話し合いができました。", jotai: "互いの考えを深める話し合いができた。" },
+    { keitai: "考えを深めていました。", jotai: "考えを深めていた。" },
+    { keitai: "改めて考えることができました。", jotai: "改めて考えることができた。" },
+    { keitai: "深く考えることができました。", jotai: "深く考えることができた。" },
+    { keitai: "迫ることができました。", jotai: "迫ることができた。" },
+    { keitai: "自分自身に置き換えて理解しようとしていました。", jotai: "自分自身に置き換えて理解しようとしていた。" },
+    { keitai: "自分なりにとらえ直すことができました。", jotai: "自分なりにとらえ直すことができた。" },
+    { keitai: "自分の経験と重ね合わせて考えることができました。", jotai: "自分の経験と重ね合わせて考えることができた。" },
+    { keitai: "自らの行動や考えを見直していることが伺えました。", jotai: "自らの行動や考えを見直していることが伺えた。" },
+    { keitai: "教材に心を深く揺さぶられ、共感を深めていました。", jotai: "教材に心を深く揺さぶられ、共感を深めていた。" },
+    { keitai: "自分の価値観を広げることができました。", jotai: "自分の価値観を広げることができた。" },
+    { keitai: "新しい見方ができるようになりました。", jotai: "新しい見方ができるようになった。" },
+    { keitai: "より広い視野から多面的・多角的に捉えようとしていました。", jotai: "より広い視野から多面的・多角的に捉えようとしていた。" },
+    { keitai: "たくさんの新しい気付きがありました。", jotai: "たくさんの新しい気付きがあった。" },
+    { keitai: "価値判断の根拠や心情を様々な視点から考えようとしていました。", jotai: "価値判断の根拠や心情を様々な視点から考えようとしていた。" },
+    { keitai: "今後の自分に生かしていこうとする姿勢がみられました。", jotai: "今後の自分に生かしていこうとする姿勢がみられた。" },
+    { keitai: "これからの行動に生かそうとする姿がみてとれました。", jotai: "これからの行動に生かそうとする姿がみてとれた。" },
+    { keitai: "自分の生活に生かそうとする意欲がみられました。", jotai: "自分の生活に生かそうとする意欲がみられた。" },
+    { keitai: "よりよい自分になろうと前向きに考えていました。", jotai: "よりよい自分になろうと前向きに考えていた。" },
+    { keitai: "これからの自分がどうありたいかを考えることができました。", jotai: "これからの自分がどうありたいかを考えることができた。" },
+    { keitai: "よりよく生きる意欲を深めていました。", jotai: "よりよく生きる意欲を深めていた。" }
+  ];
+
+  // 学年別の教材名と、対応する内容項目(学習指導要領の正式な分類名)。
+  // 「教材別 テーマ対応表」(doutoku_theme.pdf)から、教材名と内容項目の
+  // 列のみを転記したもの(個人情報は含まない)。教材名を選ぶと、対応する
+  // 内容項目が自動的に入力される。
+  var MATERIALS = {
+    "1": [
+      { name: "わたしの すきな こと", content: "個性の伸長" },
+      { name: "みんな いっしょ", content: "公正、公平、社会正義" },
+      { name: "あいさつを すると", content: "礼儀" },
+      { name: "きもちが よいのは?", content: "節度、節制" },
+      { name: "がっこうにはね……", content: "感謝" },
+      { name: "きを つけて", content: "節度、節制" },
+      { name: "がっこうの ものは?", content: "規則の尊重" },
+      { name: "ハムスターの あかちゃん", content: "生命の尊さ" },
+      { name: "うかんだ うかんだ", content: "希望と勇気、努力と強い意志" },
+      { name: "はしの うえの おおかみ", content: "親切、思いやり" },
+      { name: "ぼくの あさがお", content: "自然愛護" },
+      { name: "どきどき どっきんぐ", content: "生命の尊さ" },
+      { name: "あめが あがって……", content: "感動、畏敬の念" },
+      { name: "みんな だれかに", content: "感謝" },
+      { name: "よりみち", content: "規則の尊重" },
+      { name: "ぼくの しごと", content: "勤労、公共の精神" },
+      { name: "こぐまの らっぱ", content: "希望と勇気、努力と強い意志" },
+      { name: "ダメ", content: "善悪の判断、自律、自由と責任" },
+      { name: "こころはっぱ", content: "友情、信頼" },
+      { name: "ほかの くにから きた たべもの", content: "国際理解、国際親善" },
+      { name: "かぼちゃの つる", content: "節度、節制" },
+      { name: "みつけて みよう", content: "伝統と文化の尊重、国や郷土を愛する態度" },
+      { name: "どんぐり", content: "正直、誠実" },
+      { name: "はなばあちゃんが わらった", content: "親切、思いやり" },
+      { name: "どうぶつの かぞく", content: "家族愛、家庭生活の充実" },
+      { name: "ええところ", content: "個性の伸長" },
+      { name: "おうだんほどうで", content: "礼儀" },
+      { name: "みんなの ボール", content: "規則の尊重" },
+      { name: "にわの ことり", content: "友情、信頼" },
+      { name: "おたんじょうびカード", content: "生命の尊さ" },
+      { name: "それって、おかしいよ", content: "善悪の判断、自律、自由と責任" },
+      { name: "ぼくの はな さいたけど", content: "親切、思いやり" },
+      { name: "もう すぐ はるです", content: "自然愛護" },
+      { name: "もう すぐ にねんせい", content: "よりよい学校生活、集団生活の充実" }
+    ],
+    "2": [
+      { name: "じぶんで オッケー", content: "節度、節制" },
+      { name: "くまくんの たからもの", content: "親切、思いやり" },
+      { name: "ひかり小学校の じまんはね", content: "よりよい学校生活、集団生活の充実" },
+      { name: "金の おの", content: "正直、誠実" },
+      { name: "じぶんが しんごうきに", content: "感謝" },
+      { name: "いそいで いても", content: "礼儀" },
+      { name: "かくした ボール", content: "規則の尊重" },
+      { name: "おれた ものさし", content: "善悪の判断、自律、自由と責任" },
+      { name: "森の ともだち", content: "友情、信頼" },
+      { name: "げんきに そだて、ミニトマト", content: "自然愛護" },
+      { name: "あさも ひるも よるも あそびたい", content: "節度、節制" },
+      { name: "さかあがり できたよ", content: "希望と勇気、努力と強い意志" },
+      { name: "たんじょう日", content: "生命の尊さ" },
+      { name: "わすれられない えがお", content: "善悪の判断、自律、自由と責任" },
+      { name: "いろいろな 生きもの", content: "自然愛護" },
+      { name: "ともだちやもんな、ぼくら", content: "友情、信頼" },
+      { name: "せかいの くにの 人たちと", content: "国際理解、国際親善" },
+      { name: "ながい ながい つうがくろ", content: "伝統と文化の尊重、国や郷土を愛する態度" },
+      { name: "「かむかむメニュー」", content: "節度、節制" },
+      { name: "だって おにいちゃんだもん", content: "家族愛、家庭生活の充実" },
+      { name: "きいろい ベンチ", content: "規則の尊重" },
+      { name: "ありがとう、りょうたさん", content: "個性の伸長" },
+      { name: "学きゅうえんの さつまいも", content: "親切、思いやり" },
+      { name: "「三くみ 大すき」", content: "よりよい学校生活、集団生活の充実" },
+      { name: "「あいさつ」って いいな", content: "礼儀" },
+      { name: "大すきな フルーツポンチ", content: "公正、公平、社会正義" },
+      { name: "ぼく", content: "生命の尊さ" },
+      { name: "さるへいと 立てふだ", content: "正直、誠実" },
+      { name: "七つの ほし", content: "感動、畏敬の念" },
+      { name: "ぐみの木と 小とり", content: "親切、思いやり" },
+      { name: "ぼくは「のび太」でした ―― 藤子・F・不二雄", content: "希望と勇気、努力と強い意志" },
+      { name: "もったいないの ズボン", content: "節度、節制" },
+      { name: "ゆきひょうの ライナ", content: "生命の尊さ" },
+      { name: "いま、ぼくに できる こと", content: "勤労、公共の精神" },
+      { name: "まる子の かぞくへの しつもん", content: "家族愛、家庭生活の充実" }
+    ],
+    "3": [
+      { name: "あいさつをすると", content: "礼儀" },
+      { name: "ヌチヌグスージ(いのちのまつり)", content: "生命の尊さ" },
+      { name: "ふっかちゃんの町じまん", content: "伝統と文化の尊重、国や郷土を愛する態度" },
+      { name: "ツバメの赤ちゃん", content: "自然愛護" },
+      { name: "ゆうすけの朝", content: "節度、節制" },
+      { name: "ぬれた本 ―― リンカーン", content: "正直、誠実" },
+      { name: "みんなの学校なのに", content: "よりよい学校生活、集団生活の充実" },
+      { name: "いいち、にいっ、いいち、にいっ", content: "友情、信頼" },
+      { name: "ＳＬ公園で", content: "善悪の判断、自律、自由と責任" },
+      { name: "一さつのおくりもの", content: "親切、思いやり" },
+      { name: "作ひんのかち", content: "規則の尊重" },
+      { name: "ごみステーション", content: "勤労、公共の精神" },
+      { name: "いただいたいのち", content: "生命の尊さ" },
+      { name: "こうすけならだいじょうぶ", content: "節度、節制" },
+      { name: "きまりじゃないか", content: "規則の尊重" },
+      { name: "ホタルの引っこし", content: "自然愛護" },
+      { name: "みさきさんのえがお", content: "公正、公平、社会正義" },
+      { name: "教えて! なんでもそうだん室", content: "勤労、公共の精神" },
+      { name: "かしたつもり×もらったつもり", content: "相互理解、寛容" },
+      { name: "一りん車にのれた", content: "希望と勇気、努力と強い意志" },
+      { name: "三つの国", content: "国際理解、国際親善" },
+      { name: "たまちゃん、大すき", content: "友情、信頼" },
+      { name: "耳の聞こえないお母さんへ", content: "家族愛、家庭生活の充実" },
+      { name: "六べえじいとちよ", content: "親切、思いやり" },
+      { name: "百羽のツル", content: "感動、畏敬の念" },
+      { name: "よわむし太郎", content: "善悪の判断、自律、自由と責任" },
+      { name: "やさしい人大さくせん", content: "親切、思いやり" },
+      { name: "じゃがいもの歌", content: "個性の伸長" },
+      { name: "なかよしだから", content: "友情、信頼" },
+      { name: "ぼくのおばあちゃん", content: "家族愛、家庭生活の充実" },
+      { name: "しあわせの王子", content: "感動、畏敬の念" },
+      { name: "そびえ立つ、伊予松山城", content: "伝統と文化の尊重、国や郷土を愛する態度" },
+      { name: "おじいちゃん、おばあちゃん、見ていてね", content: "生命の尊さ" },
+      { name: "大通りのサクラなみ木", content: "感謝" },
+      { name: "「あんぱんの日」―― 木村安兵衛・英三郎", content: "希望と勇気、努力と強い意志" }
+    ],
+    "4": [
+      { name: "なにかお手つだいできることはありますか?", content: "親切、思いやり" },
+      { name: "また来年も待ってるよ", content: "自然愛護" },
+      { name: "やったぞ! 漢字テスト", content: "希望と勇気、努力と強い意志" },
+      { name: "どんどん橋のできごと", content: "節度、節制" },
+      { name: "合い言葉は「話せばわかる!」", content: "相互理解、寛容" },
+      { name: "ひびが入った水そう", content: "正直、誠実" },
+      { name: "がんばれ、ぼくのからだ!", content: "生命の尊さ" },
+      { name: "いっしょになって、わらっちゃだめだ", content: "善悪の判断、自律、自由と責任" },
+      { name: "となりのせき", content: "公正、公平、社会正義" },
+      { name: "「もっこ」をせおって", content: "勤労、公共の精神" },
+      { name: "いっしょに遊ばない", content: "友情、信頼" },
+      { name: "ふろしき", content: "伝統と文化の尊重、国や郷土を愛する態度" },
+      { name: "わたしの見つけた小さな幸せ", content: "生命の尊さ" },
+      { name: "日ごろの気持ちをつたえよう", content: "感謝" },
+      { name: "一ぴきのセミに「ありがとう」", content: "感動、畏敬の念" },
+      { name: "目ざまし時計", content: "節度、節制" },
+      { name: "お母さんのせいきゅう書", content: "家族愛、家庭生活の充実" },
+      { name: "日曜日のバーベキュー", content: "規則の尊重" },
+      { name: "「ふれあいの森」で", content: "自然愛護" },
+      { name: "ドッジボール", content: "善悪の判断、自律、自由と責任" },
+      { name: "ふるさとを守った大イチョウ", content: "伝統と文化の尊重、国や郷土を愛する態度" },
+      { name: "秋空にひびくファンファーレ", content: "よりよい学校生活、集団生活の充実" },
+      { name: "ぼくらだってオーケストラ", content: "友情、信頼" },
+      { name: "「ありがとう」の言葉", content: "礼儀" },
+      { name: "点字メニューにちょうせん", content: "勤労、公共の精神" },
+      { name: "ふくびき", content: "正直、誠実" },
+      { name: "うめのき村の四人兄弟", content: "個性の伸長" },
+      { name: "小さなお父さん", content: "家族愛、家庭生活の充実" },
+      { name: "バルバオの木", content: "生命の尊さ" },
+      { name: "雨のバスていりゅう所で", content: "規則の尊重" },
+      { name: "花さき山", content: "感動、畏敬の念" },
+      { name: "大きな絵はがき", content: "友情、信頼" },
+      { name: "世界の小学生", content: "国際理解、国際親善" },
+      { name: "ポロといっしょ", content: "親切、思いやり" },
+      { name: "花丸手帳とともに ――池江璃花子選手のちょうせん", content: "希望と勇気、努力と強い意志" }
+    ],
+    "5": [
+      { name: "泣いた赤鬼", content: "友情、信頼" },
+      { name: "見えた答案", content: "正直、誠実" },
+      { name: "お父さんは救急救命士", content: "勤労、公共の精神" },
+      { name: "「ヒヤリ・ハット」", content: "節度、節制" },
+      { name: "遠足の子どもたち", content: "善悪の判断、自律、自由と責任" },
+      { name: "ペンギンは水の中を飛ぶ鳥だ", content: "希望と勇気、努力と強い意志" },
+      { name: "どうすればいいんだ", content: "公正、公平、社会正義" },
+      { name: "心のレシーブ", content: "友情、信頼" },
+      { name: "駅前広場は自転車置き場?", content: "規則の尊重" },
+      { name: "クマのあたりまえ", content: "生命の尊さ" },
+      { name: "共有しちゃえ!", content: "善悪の判断、自律、自由と責任" },
+      { name: "イルカの海を守ろう", content: "自然愛護" },
+      { name: "お母さんへの手紙", content: "生命の尊さ" },
+      { name: "かれてしまったヒマワリ", content: "よりよい学校生活、集団生活の充実" },
+      { name: "流行おくれ", content: "節度、節制" },
+      { name: "一ふみ十年", content: "自然愛護" },
+      { name: "オーストラリアで学んだこと", content: "礼儀" },
+      { name: "卵焼き", content: "家族愛、家庭生活の充実" },
+      { name: "「折り紙大使」―― 加瀬三郎", content: "国際理解、国際親善" },
+      { name: "親から子へ、そして孫へと", content: "伝統と文化の尊重、国や郷土を愛する態度" },
+      { name: "ベートーベン", content: "希望と勇気、努力と強い意志" },
+      { name: "遊園地のできごとから", content: "規則の尊重" },
+      { name: "ブランコ乗りとピエロ", content: "相互理解、寛容" },
+      { name: "そういうものにわたしはなりたい ―― 宮沢賢治", content: "よりよく生きる喜び" },
+      { name: "最後のおくり物", content: "親切、思いやり" },
+      { name: "正月料理", content: "伝統と文化の尊重、国や郷土を愛する態度" },
+      { name: "「ありがとう上手」に", content: "感謝" },
+      { name: "くずれ落ちただんボール箱", content: "親切、思いやり" },
+      { name: "感動したこと、それがぼくの作品 ―― パブロ・ピカソ", content: "個性の伸長" },
+      { name: "天から送られた手紙", content: "真理の探究" },
+      { name: "ペルーは泣いている", content: "国際理解、国際親善" },
+      { name: "コースチャぼうやを救え", content: "生命の尊さ" },
+      { name: "わたしのボランティア体験", content: "勤労、公共の精神" },
+      { name: "一本松は語った", content: "感動、畏敬の念" },
+      { name: "バトンをつなげ", content: "よりよい学校生活、集団生活の充実" }
+    ],
+    "6": [
+      { name: "心を形に", content: "礼儀" },
+      { name: "お母さん、お願いね", content: "節度、節制" },
+      { name: "心に通じた「どうぞ」のひとこと", content: "親切、思いやり" },
+      { name: "天災は、わすれていなくてもやってくる", content: "節度、節制" },
+      { name: "世界遺産 白神山地", content: "伝統と文化の尊重、国や郷土を愛する態度" },
+      { name: "エンザロ村のかまど", content: "国際理解、国際親善" },
+      { name: "「法律」ってなんだろう", content: "規則の尊重" },
+      { name: "ばかじゃん!", content: "友情、信頼" },
+      { name: "ある犬のおはなし", content: "生命の尊さ" },
+      { name: "雨上がりの日のこと", content: "個性の伸長" },
+      { name: "あなたはどう考える?", content: "公正、公平、社会正義" },
+      { name: "土石流の中で救われた命", content: "感謝" },
+      { name: "たった一つの命だから", content: "生命の尊さ" },
+      { name: "タマゾン川", content: "自然愛護" },
+      { name: "心をつなぐ音色 ―― ピアニスト 辻井伸行", content: "希望と勇気、努力と強い意志" },
+      { name: "ともにくらすわたしたち", content: "国際理解、国際親善" },
+      { name: "修学旅行の夜", content: "善悪の判断、自律、自由と責任" },
+      { name: "うちら「ネコの手」ボランティア", content: "勤労、公共の精神" },
+      { name: "みんないっしょだよ ―― 黒柳徹子", content: "親切、思いやり" },
+      { name: "愛華さんからのメッセージ", content: "自然愛護" },
+      { name: "ぼくの名前呼んで", content: "家族愛、家庭生活の充実" },
+      { name: "せんぱいの心を受けついで", content: "よりよい学校生活、集団生活の充実" },
+      { name: "ピアノの音が……", content: "規則の尊重" },
+      { name: "手品師", content: "正直、誠実" },
+      { name: "夜空 ―― 光の旅", content: "感動、畏敬の念" },
+      { name: "新しい日本に ―― 龍馬の心", content: "伝統と文化の尊重、国や郷土を愛する態度" },
+      { name: "言葉のおくりもの", content: "友情、信頼" },
+      { name: "銀のしょく台", content: "相互理解、寛容" },
+      { name: "まんがに命を ―― 手塚治虫 日本のテレビアニメの生みの親", content: "真理の探究" },
+      { name: "青の洞門", content: "感動、畏敬の念" },
+      { name: "さばくを緑の農地に ―― 中村哲医師", content: "よりよく生きる喜び" },
+      { name: "「あきらめない」を手助けしたい ―― 義肢装具士 臼井二美男", content: "勤労、公共の精神" },
+      { name: "東京大空襲の中で", content: "生命の尊さ" },
+      { name: "小さな連絡船「ひまわり」", content: "よりよい学校生活、集団生活の充実" },
+      { name: "夢", content: "希望と勇気、努力と強い意志" }
+    ]
+  };
+
+  // 内容項目(学習指導要領の4つの視点ごとに並べた22項目。下学年はこのうち一部を使う)。
+  var CONTENT_ITEMS = [
+    "善悪の判断、自律、自由と責任",
+    "正直、誠実",
+    "節度、節制",
+    "個性の伸長",
+    "希望と勇気、努力と強い意志",
+    "真理の探究",
+    "よりよく生きる喜び",
+    "親切、思いやり",
+    "感謝",
+    "礼儀",
+    "友情、信頼",
+    "相互理解、寛容",
+    "規則の尊重",
+    "公正、公平、社会正義",
+    "勤労、公共の精神",
+    "家族愛、家庭生活の充実",
+    "よりよい学校生活、集団生活の充実",
+    "伝統と文化の尊重、国や郷土を愛する態度",
+    "国際理解、国際親善",
+    "生命の尊さ",
+    "自然愛護",
+    "感動、畏敬の念"
+  ];
+
+  var CUSTOM_VALUE = "__custom__";
+  var CUSTOM_LABEL = "✏️ その他(自由入力)";
+
+  // 教材名の導入文と、エピソード・メモの結び方をそれぞれ複数用意し、
+  // 児童ごと(idベース)にローテーションさせることで、全員が同じ型の
+  // 文章にならないようにする。
+  var INTRO_TEMPLATES = [
+    function(m){ return "「" + m + "」の学習では、"; },
+    function(m){ return "「" + m + "」の学習を通して、"; },
+    function(m){ return "「" + m + "」を学ぶ中で、"; }
+  ];
+  // メモは「〜姿」「〜こと」など児童が書いた語句そのままを想定しているため、
+  // テンプレート側で「という姿」等を重ねて付け足さず、動詞部分だけを続ける。
+  var MEMO_TEMPLATES = [
+    function(memo){ return " 実際に、" + memo + "も見られました。"; },
+    function(memo){ return " 普段から、" + memo + "が見られます。"; },
+    function(memo){ return " その様子は、" + memo + "にもよく表れていました。"; },
+    function(memo){ return " " + memo + "からも、成長が伝わってきました。"; }
+  ];
+
+  function patternIndex(seed, mod){
+    var h = 0;
+    for(var i=0;i<seed.length;i++){ h = (h * 31 + seed.charCodeAt(i)) >>> 0; }
+    return h % mod;
+  }
+
+  var STORE_KEY = "doutoku-hyouka-tool-v1";
+
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORE_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return null;
+  }
+
+  var saved = loadState();
+  var state = {
+    term: (saved && saved.term && saved.term.length) ? saved.term : [ emptyTermRow() ],
+    year: (saved && saved.year && saved.year.length) ? saved.year : [ emptyYearRow() ]
+  };
+
+  function emptyTermRow(){
+    return { id: uid(), name: "", grade: "", material: "", contentItem: "", i1: "", i2: "", i3: "", memo: "" };
+  }
+  function emptyYearRow(){
+    return { id: uid(), name: "", contentItem: "", i1: "", i2: "", i3: "" };
+  }
+
+  function persist(){
+    try{
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    }catch(e){}
+  }
+
+  function selectOptions(list, current, placeholder){
+    var html = '<option value="">' + placeholder + '</option>';
+    for(var i=0;i<list.length;i++){
+      var v = list[i];
+      var sel = (v === current) ? " selected" : "";
+      html += '<option value="' + escapeAttr(v) + '"' + sel + '>' + escapeHtml(v) + '</option>';
+    }
+    var customSel = (current === CUSTOM_VALUE) ? " selected" : "";
+    html += '<option value="' + CUSTOM_VALUE + '"' + customSel + '>' + CUSTOM_LABEL + '</option>';
+    return html;
+  }
+
+  // ①②の値は敬体・常体で形が変わらないためそのまま1つの自由入力欄でよいが、
+  // ③は文末表現(敬体/常体)が変わるため、常体が必要な学年末パネルでは
+  // 自由入力も敬体・常体の2欄をそれぞれ入力してもらう。
+  function resolveSimple(row, field){
+    return row[field] === CUSTOM_VALUE ? (row[field + "Custom"] || "") : (row[field] || "");
+  }
+
+  function resolveI3(row, group){
+    if(row.i3 === CUSTOM_VALUE){
+      return {
+        keitai: row.i3CustomKeitai || "",
+        jotai: group === "year" ? (row.i3CustomJotai || "") : ""
+      };
+    }
+    var item = findItem3(row.i3);
+    return item || { keitai: "", jotai: "" };
+  }
+
+  function selectFieldBlock(label, field, list, row, group){
+    var html = '<div class="field span2"><label>' + label + '</label><select data-field="' + field + '" data-id="' + row.id + '" data-group="' + group + '">' + selectOptions(list, row[field], "選択してください") + '</select>';
+    if(row[field] === CUSTOM_VALUE){
+      var customField = field + "Custom";
+      html += '<input type="text" class="custom-input" data-field="' + customField + '" data-id="' + row.id + '" data-group="' + group + '" value="' + escapeAttr(row[customField] || "") + '" placeholder="自由に入力してください">';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function gradeFieldBlock(row, group){
+    var opts = '<option value="">選択してください</option>';
+    for(var g=1; g<=6; g++){
+      var v = String(g);
+      opts += '<option value="' + v + '"' + (row.grade === v ? " selected" : "") + '>' + v + '年</option>';
+    }
+    return '<div class="field"><label>学年</label><select data-field="grade" data-id="' + row.id + '" data-group="' + group + '">' + opts + '</select></div>';
+  }
+
+  function materialFieldBlock(row, group){
+    var materials = MATERIALS[row.grade] || [];
+    var names = materials.map(function(m){ return m.name; });
+    var placeholder = names.length ? "選択してください" : "教材名(先に学年を選ぶと一覧から選べます)";
+    var html = '<div class="field span2"><label>教材名</label><select data-field="material" data-id="' + row.id + '" data-group="' + group + '">' + selectOptions(names, row.material, placeholder) + '</select>';
+    if(row.material === CUSTOM_VALUE){
+      html += '<input type="text" class="custom-input" data-field="materialCustom" data-id="' + row.id + '" data-group="' + group + '" value="' + escapeAttr(row.materialCustom || "") + '" placeholder="教材名を入力してください">';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function i3FieldBlock(row, group){
+    var html = '<div class="field span2"><label>③成長の様子</label><select data-field="i3" data-id="' + row.id + '" data-group="' + group + '">' + selectOptions(ITEM3.map(function(x){return x.keitai;}), row.i3, "選択してください") + '</select>';
+    if(row.i3 === CUSTOM_VALUE){
+      html += '<input type="text" class="custom-input" data-field="i3CustomKeitai" data-id="' + row.id + '" data-group="' + group + '" value="' + escapeAttr(row.i3CustomKeitai || "") + '" placeholder="敬体(です・ます調)で入力">';
+      if(group === "year"){
+        html += '<input type="text" class="custom-input" data-field="i3CustomJotai" data-id="' + row.id + '" data-group="' + group + '" value="' + escapeAttr(row.i3CustomJotai || "") + '" placeholder="常体(だ・である調)で入力(指導要録用)">';
+      }
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+  function escapeAttr(s){
+    return escapeHtml(s).replace(/"/g,"&quot;");
+  }
+
+  function findItem3(value){
+    for(var i=0;i<ITEM3.length;i++){
+      if(ITEM3[i].keitai === value) return ITEM3[i];
+    }
+    return null;
+  }
+
+  function judge(len){
+    if(len === 0) return null;
+    if(len < 60 || len > 100) return { cls: "warn", label: "要確認(60〜100字目安)" };
+    return { cls: "ok", label: "文字数OK" };
+  }
+
+  // ---- 1・2学期 ----
+
+  function renderTermList(){
+    var wrap = document.getElementById("term-list");
+    wrap.innerHTML = "";
+    state.term.forEach(function(row, idx){
+      wrap.appendChild(buildTermCard(row, idx));
+    });
+  }
+
+  function termSentence(row){
+    var i1 = resolveSimple(row, "i1");
+    var i2 = resolveSimple(row, "i2");
+    var i3 = resolveI3(row, "term");
+    var material = resolveSimple(row, "material");
+    var sentence = "";
+    if(material){
+      var introIdx = patternIndex(row.id, INTRO_TEMPLATES.length);
+      sentence += INTRO_TEMPLATES[introIdx](material);
+    }
+    sentence += i1 + i2 + i3.keitai;
+    if(row.memo){
+      var memoIdx = patternIndex(row.id + "m", MEMO_TEMPLATES.length);
+      sentence += MEMO_TEMPLATES[memoIdx](row.memo);
+    }
+    return sentence;
+  }
+
+  function buildTermCard(row, idx){
+    var card = document.createElement("div");
+    card.className = "card";
+
+    var sentence = termSentence(row);
+    var len = sentence.length;
+    var j = judge(len);
+
+    card.innerHTML =
+      '<div class="card-top">' +
+        '<span class="card-index"><span class="num">' + (idx+1) + '</span>児童</span>' +
+        '<button class="icon-btn danger" data-act="del-term" data-id="' + row.id + '">削除</button>' +
+      '</div>' +
+      '<div class="field-grid">' +
+        '<div class="field"><label>氏名(任意・手元でのみ使用)</label><input type="text" data-field="name" data-id="' + row.id + '" data-group="term" value="' + escapeAttr(row.name) + '" placeholder="例: 記号や仮名でも可"></div>' +
+        gradeFieldBlock(row, "term") +
+        materialFieldBlock(row, "term") +
+        selectFieldBlock("内容項目", "contentItem", CONTENT_ITEMS, row, "term") +
+        selectFieldBlock("①学習状況", "i1", ITEM1, row, "term") +
+        selectFieldBlock("②道徳的価値", "i2", ITEM2, row, "term") +
+        i3FieldBlock(row, "term") +
+        '<div class="field span2"><label>エピソード・メモ(任意)</label><input type="text" data-field="memo" data-id="' + row.id + '" data-group="term" value="' + escapeAttr(row.memo) + '" placeholder="例: 友だちに声をかける姿"></div>' +
+      '</div>' +
+      '<div class="output">' +
+        '<div class="output-label"><span class="name">生成文(敬体・通知票用)</span><button class="copy-btn" data-copy="term-' + row.id + '">コピー</button></div>' +
+        '<div class="output-text' + (sentence ? '' : ' empty') + '" id="text-term-' + row.id + '">' + (sentence ? escapeHtml(sentence) : "①〜③を選択すると文章が表示されます") + '</div>' +
+        '<div class="output-meta" id="meta-term-' + row.id + '"><span class="count">' + len + '字</span>' + (j ? '<span class="badge ' + j.cls + '">' + j.label + '</span>' : '') + '</div>' +
+      '</div>';
+
+    return card;
+  }
+
+  function updateTermOutput(row){
+    var textEl = document.getElementById("text-term-" + row.id);
+    var metaEl = document.getElementById("meta-term-" + row.id);
+    if(!textEl || !metaEl) return;
+    var sentence = termSentence(row);
+    var len = sentence.length;
+    var j = judge(len);
+    textEl.textContent = sentence || "①〜③を選択すると文章が表示されます";
+    textEl.classList.toggle("empty", !sentence);
+    metaEl.innerHTML = '<span class="count">' + len + '字</span>' + (j ? '<span class="badge ' + j.cls + '">' + j.label + '</span>' : '');
+  }
+
+  // ---- 学年末所見・指導要録 ----
+
+  function renderYearList(){
+    var wrap = document.getElementById("year-list");
+    wrap.innerHTML = "";
+    state.year.forEach(function(row, idx){
+      wrap.appendChild(buildYearCard(row, idx));
+    });
+  }
+
+  function yearSentences(row){
+    var i1 = resolveSimple(row, "i1");
+    var i2 = resolveSimple(row, "i2");
+    var i3 = resolveI3(row, "year");
+    var keitai = i1 + i2 + i3.keitai;
+    var jotai = i3.jotai ? (i1 + i2 + i3.jotai) : "";
+    return { keitai: keitai, jotai: jotai };
+  }
+
+  function buildYearCard(row, idx){
+    var card = document.createElement("div");
+    card.className = "card";
+
+    var sent = yearSentences(row);
+    var lenK = sent.keitai.length;
+    var j = judge(lenK);
+
+    card.innerHTML =
+      '<div class="card-top">' +
+        '<span class="card-index"><span class="num">' + (idx+1) + '</span>児童</span>' +
+        '<button class="icon-btn danger" data-act="del-year" data-id="' + row.id + '">削除</button>' +
+      '</div>' +
+      '<div class="field-grid">' +
+        '<div class="field span2"><label>氏名(任意・手元でのみ使用)</label><input type="text" data-field="name" data-id="' + row.id + '" data-group="year" value="' + escapeAttr(row.name) + '" placeholder="例: 記号や仮名でも可"></div>' +
+        selectFieldBlock("内容項目", "contentItem", CONTENT_ITEMS, row, "year") +
+        selectFieldBlock("①学習状況", "i1", ITEM1, row, "year") +
+        selectFieldBlock("②道徳的価値", "i2", ITEM2, row, "year") +
+        i3FieldBlock(row, "year") +
+      '</div>' +
+      '<div class="output">' +
+        '<div class="output-label"><span class="name">通知票用(学年末所見・敬体)</span><button class="copy-btn" data-copy="yeark-' + row.id + '">コピー</button></div>' +
+        '<div class="output-text' + (sent.keitai ? '' : ' empty') + '" id="text-yeark-' + row.id + '">' + (sent.keitai ? escapeHtml(sent.keitai) : "①〜③を選択すると文章が表示されます") + '</div>' +
+        '<div class="output-meta" id="meta-yeark-' + row.id + '"><span class="count">' + lenK + '字</span>' + (j ? '<span class="badge ' + j.cls + '">' + j.label + '</span>' : '') + '</div>' +
+      '</div>' +
+      '<div class="output">' +
+        '<div class="output-label"><span class="name">指導要録用(常体)</span><button class="copy-btn" data-copy="yearj-' + row.id + '">コピー</button></div>' +
+        '<div class="output-text' + (sent.jotai ? '' : ' empty') + '" id="text-yearj-' + row.id + '">' + (sent.jotai ? escapeHtml(sent.jotai) : "③を選択すると文章が表示されます") + '</div>' +
+        '<div class="output-meta" id="meta-yearj-' + row.id + '"><span class="count">' + sent.jotai.length + '字</span></div>' +
+      '</div>';
+
+    return card;
+  }
+
+  function updateYearOutput(row){
+    var textK = document.getElementById("text-yeark-" + row.id);
+    var metaK = document.getElementById("meta-yeark-" + row.id);
+    var textJ = document.getElementById("text-yearj-" + row.id);
+    var metaJ = document.getElementById("meta-yearj-" + row.id);
+    if(!textK || !metaK || !textJ || !metaJ) return;
+    var sent = yearSentences(row);
+    var lenK = sent.keitai.length;
+    var j = judge(lenK);
+    textK.textContent = sent.keitai || "①〜③を選択すると文章が表示されます";
+    textK.classList.toggle("empty", !sent.keitai);
+    metaK.innerHTML = '<span class="count">' + lenK + '字</span>' + (j ? '<span class="badge ' + j.cls + '">' + j.label + '</span>' : '');
+    textJ.textContent = sent.jotai || "③を選択すると文章が表示されます";
+    textJ.classList.toggle("empty", !sent.jotai);
+    metaJ.innerHTML = '<span class="count">' + sent.jotai.length + '字</span>';
+  }
+
+  function renderAll(){
+    renderTermList();
+    renderYearList();
+  }
+
+  // ---- イベント処理(入力の委譲) ----
+  // 入力・選択のたびにカード全体を作り直すと、入力中のテキストボックスからフォーカスが
+  // 外れてしまう(1文字打つごとにカーソルが飛ぶ)ため、状態更新後は生成文と文字数の
+  // 表示だけをピンポイントで更新する。フォームの再構築は行追加・削除・初期表示のみで行う。
+
+  document.addEventListener("input", function(e){
+    var t = e.target;
+    var group = t.getAttribute("data-group");
+    if(!group) return;
+    var id = t.getAttribute("data-id");
+    var field = t.getAttribute("data-field");
+    var list = state[group];
+    var row = null;
+    for(var i=0;i<list.length;i++){
+      if(list[i].id === id){
+        list[i][field] = t.value;
+        row = list[i];
+        break;
+      }
+    }
+    if(!row) return;
+
+    if(field === "grade"){
+      // 学年が変わると教材の選択肢が入れ替わるため、学年に紐づく
+      // 教材名・内容項目の選択状態はリセットする。
+      row.material = "";
+      row.materialCustom = "";
+      row.contentItem = "";
+      row.contentItemCustom = "";
+    } else if(field === "material" && t.value !== CUSTOM_VALUE && t.value !== ""){
+      var materials = MATERIALS[row.grade] || [];
+      for(var k=0;k<materials.length;k++){
+        if(materials[k].name === t.value){ row.contentItem = materials[k].content; break; }
+      }
+    }
+
+    if(t.tagName === "SELECT"){
+      // セレクトの変更(自由入力への切り替えを含む)は入力中の連打ではないため、
+      // フォーカス喪失を気にせずカード全体を再構築して自由入力欄の表示を反映する。
+      if(group === "term") renderTermList(); else renderYearList();
+    } else if(group === "term") updateTermOutput(row); else updateYearOutput(row);
+    persist();
+  });
+
+  document.addEventListener("click", function(e){
+    var t = e.target;
+
+    if(t.id === "term-add"){
+      state.term.push(emptyTermRow());
+      renderTermList();
+      persist();
+      return;
+    }
+    if(t.id === "year-add"){
+      state.year.push(emptyYearRow());
+      renderYearList();
+      persist();
+      return;
+    }
+
+    var act = t.getAttribute("data-act");
+    if(act === "del-term"){
+      var id1 = t.getAttribute("data-id");
+      state.term = state.term.filter(function(r){ return r.id !== id1; });
+      if(state.term.length === 0) state.term.push(emptyTermRow());
+      renderTermList();
+      persist();
+      return;
+    }
+    if(act === "del-year"){
+      var id2 = t.getAttribute("data-id");
+      state.year = state.year.filter(function(r){ return r.id !== id2; });
+      if(state.year.length === 0) state.year.push(emptyYearRow());
+      renderYearList();
+      persist();
+      return;
+    }
+
+    var copyKey = t.getAttribute("data-copy");
+    if(copyKey){
+      var el = document.getElementById("text-" + copyKey);
+      if(el){
+        copyToClipboard(el.textContent, t);
+      }
+      return;
+    }
+
+    if(t.classList.contains("tab-btn")){
+      var tab = t.getAttribute("data-tab");
+      document.querySelectorAll(".tab-btn").forEach(function(b){ b.classList.toggle("active", b === t); });
+      document.getElementById("panel-term").classList.toggle("active", tab === "term");
+      document.getElementById("panel-year").classList.toggle("active", tab === "year");
+      return;
+    }
+
+    if(t.id === "clear-all"){
+      if(confirm("入力したすべてのデータを消去します。よろしいですか?")){
+        state = { term: [emptyTermRow()], year: [emptyYearRow()] };
+        renderAll();
+        persist();
+      }
+      return;
+    }
+  });
+
+  function copyToClipboard(text, btn){
+    function done(ok){
+      var original = btn.textContent;
+      btn.textContent = ok ? "コピーしました" : "コピー失敗";
+      btn.classList.toggle("copied", ok);
+      setTimeout(function(){
+        btn.textContent = original;
+        btn.classList.remove("copied");
+      }, 1400);
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ done(true); }).catch(function(){ fallbackCopy(text, done); });
+    }else{
+      fallbackCopy(text, done);
+    }
+  }
+
+  function fallbackCopy(text, cb){
+    try{
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      var ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      cb(ok);
+    }catch(e){
+      cb(false);
+    }
+  }
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
