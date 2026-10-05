@@ -244,16 +244,29 @@
     letter-spacing: .03em;
   }
   .output-text{
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    border: none;
+    background: transparent;
+    color: var(--text);
     font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
     font-size: 15.5px;
     line-height: 1.9;
     min-height: 1.9em;
+    padding: 0;
+    resize: vertical;
     white-space: pre-wrap;
     word-break: break-word;
   }
-  .output-text.empty{
+  .output-text:focus{
+    outline: none;
+    box-shadow: 0 0 0 3px var(--accent-soft);
+    border-radius: 6px;
+  }
+  .output-text::placeholder{
     color: var(--text-dim);
-    font-family: inherit;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Helvetica Neue", Arial, sans-serif;
     font-size: 13px;
   }
   .output-meta{
@@ -273,8 +286,13 @@
   }
   .badge.ok{ background: var(--ok-bg); color: var(--ok); }
   .badge.warn{ background: var(--warn-bg); color: var(--warn); }
-  .copy-btn{
+  .output-actions{
     margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .copy-btn{
     appearance: none;
     border: 1px solid var(--border);
     background: var(--surface);
@@ -771,10 +789,24 @@
   };
 
   function emptyTermRow(){
-    return { id: uid(), name: "", grade: "", material: "", contentItem: "", i1: "", i2: "", i3: "", memo: "" };
+    return { id: uid(), name: "", grade: "", material: "", contentItem: "", i1: "", i2: "", i3: "", memo: "", termText: "", termEdited: false };
   }
   function emptyYearRow(){
-    return { id: uid(), name: "", contentItem: "", i1: "", i2: "", i3: "" };
+    return { id: uid(), name: "", contentItem: "", i1: "", i2: "", i3: "", yearKeitaiText: "", yearKeitaiEdited: false, yearJotaiText: "", yearJotaiEdited: false };
+  }
+
+  // 生成文は①②③等の入力に応じて自動更新されるが、教員が手直し・加筆した
+  // 場合はその編集後のテキストを優先表示する。「元の生成文に戻す」ボタンで
+  // 編集を破棄し、自動生成に戻せる。
+  function getTermDisplayText(row){
+    return row.termEdited ? row.termText : termSentence(row);
+  }
+  function getYearDisplayTexts(row){
+    var sent = yearSentences(row);
+    return {
+      keitai: row.yearKeitaiEdited ? row.yearKeitaiText : sent.keitai,
+      jotai: row.yearJotaiEdited ? row.yearJotaiText : sent.jotai
+    };
   }
 
   function persist(){
@@ -908,8 +940,8 @@
     var card = document.createElement("div");
     card.className = "card";
 
-    var sentence = termSentence(row);
-    var len = sentence.length;
+    var displayText = getTermDisplayText(row);
+    var len = displayText.length;
     var j = judge(len);
 
     card.innerHTML =
@@ -928,8 +960,11 @@
         '<div class="field span2"><label>エピソード・メモ(任意)</label><input type="text" data-field="memo" data-id="' + row.id + '" data-group="term" value="' + escapeAttr(row.memo) + '" placeholder="例: 友だちに声をかける姿"></div>' +
       '</div>' +
       '<div class="output">' +
-        '<div class="output-label"><span class="name">生成文(敬体・通知票用)</span><button class="copy-btn" data-copy="term-' + row.id + '">コピー</button></div>' +
-        '<div class="output-text' + (sentence ? '' : ' empty') + '" id="text-term-' + row.id + '">' + (sentence ? escapeHtml(sentence) : "①〜③を選択すると文章が表示されます") + '</div>' +
+        '<div class="output-label"><span class="name">生成文(敬体・通知票用・編集可)</span><div class="output-actions">' +
+          '<button class="icon-btn" id="reset-term-' + row.id + '" data-act="reset-term" data-id="' + row.id + '"' + (row.termEdited ? '' : ' hidden') + '>元の生成文に戻す</button>' +
+          '<button class="copy-btn" data-copy="term-' + row.id + '">コピー</button>' +
+        '</div></div>' +
+        '<textarea class="output-text" id="text-term-' + row.id + '" data-field="termText" data-id="' + row.id + '" data-group="term" rows="3" placeholder="①〜③を選択すると文章が表示されます(ここで自由に手直しできます)">' + escapeHtml(displayText) + '</textarea>' +
         '<div class="output-meta" id="meta-term-' + row.id + '"><span class="count">' + len + '字</span>' + (j ? '<span class="badge ' + j.cls + '">' + j.label + '</span>' : '') + '</div>' +
       '</div>';
 
@@ -939,12 +974,15 @@
   function updateTermOutput(row){
     var textEl = document.getElementById("text-term-" + row.id);
     var metaEl = document.getElementById("meta-term-" + row.id);
+    var resetBtn = document.getElementById("reset-term-" + row.id);
     if(!textEl || !metaEl) return;
-    var sentence = termSentence(row);
-    var len = sentence.length;
+    // 教員が手直し中(termEdited)のときは、他の項目の変更で自動生成文が
+    // 上書きされないよう、テキストエリアの中身には触れない。
+    if(!row.termEdited) textEl.value = termSentence(row);
+    if(resetBtn) resetBtn.hidden = !row.termEdited;
+    var displayText = getTermDisplayText(row);
+    var len = displayText.length;
     var j = judge(len);
-    textEl.textContent = sentence || "①〜③を選択すると文章が表示されます";
-    textEl.classList.toggle("empty", !sentence);
     metaEl.innerHTML = '<span class="count">' + len + '字</span>' + (j ? '<span class="badge ' + j.cls + '">' + j.label + '</span>' : '');
   }
 
@@ -971,8 +1009,8 @@
     var card = document.createElement("div");
     card.className = "card";
 
-    var sent = yearSentences(row);
-    var lenK = sent.keitai.length;
+    var disp = getYearDisplayTexts(row);
+    var lenK = disp.keitai.length;
     var j = judge(lenK);
 
     card.innerHTML =
@@ -988,14 +1026,20 @@
         i3FieldBlock(row, "year") +
       '</div>' +
       '<div class="output">' +
-        '<div class="output-label"><span class="name">通知票用(学年末所見・敬体)</span><button class="copy-btn" data-copy="yeark-' + row.id + '">コピー</button></div>' +
-        '<div class="output-text' + (sent.keitai ? '' : ' empty') + '" id="text-yeark-' + row.id + '">' + (sent.keitai ? escapeHtml(sent.keitai) : "①〜③を選択すると文章が表示されます") + '</div>' +
+        '<div class="output-label"><span class="name">通知票用(学年末所見・敬体・編集可)</span><div class="output-actions">' +
+          '<button class="icon-btn" id="reset-yeark-' + row.id + '" data-act="reset-yeark" data-id="' + row.id + '"' + (row.yearKeitaiEdited ? '' : ' hidden') + '>元の生成文に戻す</button>' +
+          '<button class="copy-btn" data-copy="yeark-' + row.id + '">コピー</button>' +
+        '</div></div>' +
+        '<textarea class="output-text" id="text-yeark-' + row.id + '" data-field="yearKeitaiText" data-id="' + row.id + '" data-group="year" rows="3" placeholder="①〜③を選択すると文章が表示されます(ここで自由に手直しできます)">' + escapeHtml(disp.keitai) + '</textarea>' +
         '<div class="output-meta" id="meta-yeark-' + row.id + '"><span class="count">' + lenK + '字</span>' + (j ? '<span class="badge ' + j.cls + '">' + j.label + '</span>' : '') + '</div>' +
       '</div>' +
       '<div class="output">' +
-        '<div class="output-label"><span class="name">指導要録用(常体)</span><button class="copy-btn" data-copy="yearj-' + row.id + '">コピー</button></div>' +
-        '<div class="output-text' + (sent.jotai ? '' : ' empty') + '" id="text-yearj-' + row.id + '">' + (sent.jotai ? escapeHtml(sent.jotai) : "③を選択すると文章が表示されます") + '</div>' +
-        '<div class="output-meta" id="meta-yearj-' + row.id + '"><span class="count">' + sent.jotai.length + '字</span></div>' +
+        '<div class="output-label"><span class="name">指導要録用(常体・編集可)</span><div class="output-actions">' +
+          '<button class="icon-btn" id="reset-yearj-' + row.id + '" data-act="reset-yearj" data-id="' + row.id + '"' + (row.yearJotaiEdited ? '' : ' hidden') + '>元の生成文に戻す</button>' +
+          '<button class="copy-btn" data-copy="yearj-' + row.id + '">コピー</button>' +
+        '</div></div>' +
+        '<textarea class="output-text" id="text-yearj-' + row.id + '" data-field="yearJotaiText" data-id="' + row.id + '" data-group="year" rows="3" placeholder="③を選択すると文章が表示されます(ここで自由に手直しできます)">' + escapeHtml(disp.jotai) + '</textarea>' +
+        '<div class="output-meta" id="meta-yearj-' + row.id + '"><span class="count">' + disp.jotai.length + '字</span></div>' +
       '</div>';
 
     return card;
@@ -1006,16 +1050,19 @@
     var metaK = document.getElementById("meta-yeark-" + row.id);
     var textJ = document.getElementById("text-yearj-" + row.id);
     var metaJ = document.getElementById("meta-yearj-" + row.id);
+    var resetK = document.getElementById("reset-yeark-" + row.id);
+    var resetJ = document.getElementById("reset-yearj-" + row.id);
     if(!textK || !metaK || !textJ || !metaJ) return;
     var sent = yearSentences(row);
-    var lenK = sent.keitai.length;
+    if(!row.yearKeitaiEdited) textK.value = sent.keitai;
+    if(!row.yearJotaiEdited) textJ.value = sent.jotai;
+    if(resetK) resetK.hidden = !row.yearKeitaiEdited;
+    if(resetJ) resetJ.hidden = !row.yearJotaiEdited;
+    var disp = getYearDisplayTexts(row);
+    var lenK = disp.keitai.length;
     var j = judge(lenK);
-    textK.textContent = sent.keitai || "①〜③を選択すると文章が表示されます";
-    textK.classList.toggle("empty", !sent.keitai);
     metaK.innerHTML = '<span class="count">' + lenK + '字</span>' + (j ? '<span class="badge ' + j.cls + '">' + j.label + '</span>' : '');
-    textJ.textContent = sent.jotai || "③を選択すると文章が表示されます";
-    textJ.classList.toggle("empty", !sent.jotai);
-    metaJ.innerHTML = '<span class="count">' + sent.jotai.length + '字</span>';
+    metaJ.innerHTML = '<span class="count">' + disp.jotai.length + '字</span>';
   }
 
   function renderAll(){
@@ -1045,7 +1092,13 @@
     }
     if(!row) return;
 
-    if(field === "grade"){
+    if(field === "termText"){
+      row.termEdited = true;
+    } else if(field === "yearKeitaiText"){
+      row.yearKeitaiEdited = true;
+    } else if(field === "yearJotaiText"){
+      row.yearJotaiEdited = true;
+    } else if(field === "grade"){
       // 学年が変わると教材の選択肢が入れ替わるため、学年に紐づく
       // 教材名・内容項目の選択状態はリセットする。
       row.material = "";
@@ -1105,8 +1158,32 @@
     if(copyKey){
       var el = document.getElementById("text-" + copyKey);
       if(el){
-        copyToClipboard(el.textContent, t);
+        copyToClipboard(el.value, t);
       }
+      return;
+    }
+
+    if(act === "reset-term" || act === "reset-yeark" || act === "reset-yearj"){
+      var resetId = t.getAttribute("data-id");
+      var resetGroup = (act === "reset-term") ? "term" : "year";
+      var resetList = state[resetGroup];
+      for(var ri=0; ri<resetList.length; ri++){
+        if(resetList[ri].id === resetId){
+          if(act === "reset-term"){
+            resetList[ri].termEdited = false;
+            resetList[ri].termText = "";
+          } else if(act === "reset-yeark"){
+            resetList[ri].yearKeitaiEdited = false;
+            resetList[ri].yearKeitaiText = "";
+          } else {
+            resetList[ri].yearJotaiEdited = false;
+            resetList[ri].yearJotaiText = "";
+          }
+          break;
+        }
+      }
+      if(resetGroup === "term") renderTermList(); else renderYearList();
+      persist();
       return;
     }
 
